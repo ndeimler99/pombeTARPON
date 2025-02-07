@@ -35,29 +35,69 @@ WorkflowMain.initialise(workflow, params, log)
 
 workflow {
 
-    modify_file_type(params.input_file)
-    // validate parameters and throw an error if invalid parameters
+    //parameter validation
+        // input file is provided (or directory)
     valid_params = validate_parameters()
 
     if (valid_params.passed.value == false){
         exit 1, "Parameter Validation Failed"
     }
 
-    // check if pipeline should be running while sequencing - this function currently does not work and will result in no output being generated
-    if (params.real_time) {
-        real_time_pipeline()
-    }
-    else {
-        if (!params.isolated){
-            isolated = isolate_telomeres(params.input_file)
-        }
-        else {
-            isolated = file(params.input_file)
-        }
+    // if input is directory and --demux is true
+        // do not combine files
+        // convert each file to bam if fastq
+        // pass each file into telomere pipeline
 
-        analyze_telomeres(isolated)
-        cluster_telomeres(analyze_telomeres.out)
-    }
+    // if input is single bam file and --nanopore_barcodes is true
+        // demux using nanopore dorado demux
+    
+    // if input is single bam file and barcodes file is provided and adaptor_sequence is none
+        // convert file to bam if fastq
+        // pass file into telomere pipeline
+
+    // if input is single bam file and barcodes file is provided and adaptor_sequence is provided
+        // convert file to bam if fastq
+        // pass single bam file into telomere pipeline
+
+    
+    // if demux is true or dorado demux has already been run (--nanopore_barcodes is true)
+        // align to reference genome
+        // isolate telomeric sequences
+        // if adaptor is not none or sample file is not none
+            // identify end of telomere
+        // else
+            // identify end of teloemre using regex
+
+    // else
+        // align bulk sequencing to reference genome
+        // isolate telomeric sequences
+        // if barcodes file is provided
+            // if adaptor sequence is provided
+                // identify adaptor sequence and then demux
+            // else
+                // demux by barcodes at end of telomere
+    
+    // identify start of telomeres
+    // filter telomeres by composition
+    //cluster using meshclust
+    // blast TAS/rDNA elements
+    // create all relevant plots in R/python
+        // bulk telomere length histograms
+        // bulk telomere length barcharts similar to that of TARPON
+        // chromosome cluster specific telomere length boxplot
+        // pycairo cluster charts
+    // generate html report
+    
+
+
+
+
+    // to do:
+        // add strand comparison options
+
+
+
+
 }
 
 // When workflow finishes return basic description of finished or not and if it works remove the work directory if specified during run
