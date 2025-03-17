@@ -72,7 +72,7 @@ process ALIGNMENT {
     gzip ${sample_name}.fastq
     minimap2 -ax map-ont ${POMBE_GENOME_FILE} ${sample_name}.fastq.gz > ${sample_name}.alignment.bam 2> ${sample_name}.alignment.err
     alignment_stats.py --alignment_file ${sample_name}.alignment.bam --stats_file ${sample_name}.stats.txt --sample ${sample_name}
-    alignment_plot.R ${sample_name}.stats.txt
+    alignment_plots.R ${sample_name}.stats.txt
     """
 }
 

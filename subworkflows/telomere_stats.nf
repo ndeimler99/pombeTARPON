@@ -42,7 +42,9 @@ workflow TELOMERE_STATS {
 
         PLOT_CLUSTERS(merged_fh_ch)
 
-        CONSENSUS_SEQ(merged_fh_ch) //- create via python script, blast, and plot
+        if (params.consensus == true){
+            CONSENSUS_SEQ(merged_fh_ch) //- create via python script, blast, and plot
+        }  
 
         GENERATE_R_PLOTS(merged_fh_ch)
         // create plots and figures
