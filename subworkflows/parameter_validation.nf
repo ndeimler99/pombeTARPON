@@ -33,20 +33,14 @@ workflow validate_parameters {
 
         // checking to see if input files/directory exist
         try {
-            file(params.input_file, checkIfExists:true)
+            file(params.input, checkIfExists:true)
         }
         catch (Exception e) {
             parameters_passed = false
             println("Error - Input File or Directory Does not Exist")
         }
 
-        // if adaptor sequence, sample_file and nanopore barcodes is all false error out pipeline if one sample per flowcell is used
-        if (params.adaptor_sequence == "" && params.sample_file == "" && !params.nanopore_barcodes && !params.simplex) {
-            parameters_passed = false
-            println ("Adaptor Sequence and Sample File cannot both be empty while Nanopore Barcodes is False and simplex is not specified")
-        }
-
-        if (params.adaptor_sequence != "" && params.nanopore_barcodes != false){
+        if (params.capture_probe_sequence != "" && params.nanopore_barcodes != false){
             parameters_passed = false
             println ("Adaptor Sequence and Nanopore Barcodes cannot both be specified")
         }

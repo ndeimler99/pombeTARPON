@@ -10,7 +10,7 @@ nextflow.enable.dsl=2
 */
 
 println """\
-    TArPON - Telomere Analysis Pipeline on Nanopore Sequencing Data
+    pombeTARPON - Telomere Analysis Pipeline on Nanopore Sequencing Data
     ================================================
     v0.0.1
     """.stripIndent()
@@ -21,11 +21,13 @@ println """\
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-include { validate_parameters,modify_file_type } from "./subworkflows/parameter_validation.nf"
-include { isolate_telomeres } from "./subworkflows/isolate_telomeres.nf"
-include { analyze_telomeres,cluster_telomeres } from "./subworkflows/telomere_analysis.nf"
+include { validate_parameters } from "./subworkflows/parameter_validation.nf"
+include { PREPROCESS_FILES } from "./subworkflows/file_preprocessing.nf"
+//include { isolate_telomeres } from "./subworkflows/isolate_telomeres.nf"
+//include { analyze_telomeres,cluster_telomeres } from "./subworkflows/telomere_analysis.nf"
 include { paramsHelp; paramsSummaryLog; samplesheetToList } from 'plugin/nf-schema'
-
+include { ALIGNMENT } from "./bin/process.nf"
+include { TELOMERE_STATS } from "./subworkflows/telomere_stats.nf"
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     Run Workflow
@@ -43,49 +45,48 @@ workflow {
         exit 1, "Parameter Validation Failed"
     }
 
-    // if input is directory and --demux is true
-        // do not combine files
-        // convert each file to bam if fastq
-        // pass each file into telomere pipeline
 
-    // if input is single bam file and --nanopore_barcodes is true
-        // demux using nanopore dorado demux
-    
-    // if input is single bam file and barcodes file is provided and adaptor_sequence is none
-        // convert file to bam if fastq
-        // pass file into telomere pipeline
+    // I am making this too complicated to start
+        // start with Nanopore demuxed sequences and no adaptor
+        // to include in final report is number of reads per each barcode/unclassified
+        // per barcode number of telo reads
+        // telo stats per barcode
 
-    // if input is single bam file and barcodes file is provided and adaptor_sequence is provided
-        // convert file to bam if fastq
-        // pass single bam file into telomere pipeline
+    // process input files and isolate telomeric sequences
+        // returns channel filled with sample - putative read pairs
+    preprocess_out = PREPROCESS_FILES()
 
-    
-    // if demux is true or dorado demux has already been run (--nanopore_barcodes is true)
-        // align to reference genome
+    // align to reference genome for html report
+    alignment = ALIGNMENT(preprocess_out.input, file(params.pombe_genome))
+
+    // take putative reads and identify telo start, telo end, and filter low quality telo sequences
+    telo_results = TELOMERE_STATS(preprocess_out.reverse_complemented_reads)
+
+    // generate html report
+    //GENEARTE_HTML_REPORT(alignment.stats.collect())
+
+
+
+
+
+
+
+    // for each sample
         // isolate telomeric sequences
-        // if adaptor is not none or sample file is not none
-            // identify end of telomere
-        // else
-            // identify end of teloemre using regex
-
-    // else
-        // align bulk sequencing to reference genome
-        // isolate telomeric sequences
-        // if barcodes file is provided
-            // if adaptor sequence is provided
-                // identify adaptor sequence and then demux
-            // else
-                // demux by barcodes at end of telomere
     
-    // identify start of telomeres
-    // filter telomeres by composition
-    //cluster using meshclust
-    // blast TAS/rDNA elements
-    // create all relevant plots in R/python
-        // bulk telomere length histograms
-        // bulk telomere length barcharts similar to that of TARPON
-        // chromosome cluster specific telomere length boxplot
-        // pycairo cluster charts
+        // identify end of telomere
+            // one python script with multiple functions depending on input paramters sample files etc
+        
+        // identify start of telomere
+        // filter telomeres by quality/composition
+        // cluster using meshclust
+        // blast against TAS/rDNA or custom parameter file
+
+        // create all relevant plots in R/python
+            // bulk telomere length histograms
+            // bulk telomere length barcharts similar to that of TARPON
+            // chromosome cluster specific telomere length boxplot
+            // pycairo cluster charts
     // generate html report
     
 
@@ -94,9 +95,6 @@ workflow {
 
     // to do:
         // add strand comparison options
-
-
-
 
 }
 
