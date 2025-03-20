@@ -187,6 +187,7 @@ process CONSENSUS_SEQ {
 
     input:
         tuple val(sample_name), val(files)
+        path(ref_file)
         //blast is files[0], clusters is files[1], fasta is files[2], stast is files[3]
 
     script:
@@ -196,13 +197,18 @@ process CONSENSUS_SEQ {
     for cluster in \$(ls -1 *cluster*.fa); 
         do mafft \$cluster > \$cluster.aln;
     done
+
+    create_consensus_seq.py --consensus_files *.aln --output_fasta ${sample_name}.consensus_seqs.fa \
+                                --output_stats ${sample_name}.consensus_stats.txt \
+                                --seq_percentage ${params.alignment_percentage}
  
+    blastn -query ${sample_name}.consensus_seqs.fa -subject ${ref_file} -outfmt "6 qseqid sseqid pident length slen mismatch gapopen qstart qend sstart send evalue bitscore qlen" > ${sample_name}.consensus_blast.txt
+    
+    consensus_plots.R ${sample_name}.consensus_stats.txt
+    
+
     """
 }
-// create_consensus_seq.py --consensuse_files *.aln --output_fasta ${sample_name}.consensus_seqs.fa \
-//                             --output_stats ${sample_name}.consensus_stats.txt \
-//                             --seq_percentage ${params.alignment_percentage}
-
 
 process getParams {
 

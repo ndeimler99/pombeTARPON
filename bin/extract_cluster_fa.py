@@ -2,6 +2,10 @@
 
 import argparse
 
+def rev_complement(seq):
+    nucl_dict = {"A":"T", "T":"A","C":"G", "G":"C"}
+    return ''.join([nucl_dict[i] for i seq[::-1]])
+    
 def meshclust_clusters(mesh_file):
     cluster_dict = {}
     with open(mesh_file, 'r') as fh:
@@ -42,7 +46,7 @@ def main(args):
         if len(cluster_dict[cluster]) > args.minimum_cluster_size:
             with open("{}.cluster_{}.fa".format(args.prefix, cluster), "w") as cluster_fh:
                 for read in cluster_dict[cluster]:
-                    cluster_fh.write("{}\n{}\n".format(read, seq_dict[read]))
+                    cluster_fh.write("{}\n{}\n".format(read, rev_complement(seq_dict[read])))
 
 def argparser():
     parser = argparse.ArgumentParser()
