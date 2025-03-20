@@ -8,8 +8,6 @@ library(dplyr)
 args = commandArgs(trailingOnly=TRUE)
 data_table <- read.table(args[1], sep="\t", header=TRUE)
 
-data_table <- read.table("../test2.stats_with_cluster.txt", sep="\t", header=TRUE)
-
 telo_length_histogram <- ggplot(data=data_table) +
   geom_histogram(mapping=aes(x=telo_length), fill="#D81B60", binwidth=10) +
   theme_minimal() +

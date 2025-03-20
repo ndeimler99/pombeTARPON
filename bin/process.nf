@@ -40,6 +40,8 @@ process IDENTIFY_TELO_CORDINATES {
         tuple val(sample_name), path("*coordinates_identified.bam"), emit: coordinates_identified
         tuple val(sample_name), path("*no_coordinates.bam"), emit: no_coordinates_identified
         
+    publishDir "${params.outdir}/${sample_name}/", mode: 'copy', overwrite:true, pattern:"*.coordinates_identified.bam"
+
     script:
     """
     identify_telo_coord.py --input_file ${input_file} \
@@ -65,7 +67,10 @@ process ALIGNMENT {
         path(POMBE_GENOME_FILE)
     output:
         tuple val(sample_name), path("*.stats.txt"), emit:alignment
-    
+        path("*.pdf")
+
+    publishDir "${params.outdir}/${sample_name}/", mode: 'copy', overwrite:true, pattern:"*.pdf"
+
     script: 
     """
     samtools fastq ${input_fh} > ${sample_name}.fastq
@@ -98,13 +103,24 @@ process GENERATE_R_PLOTS {
     tag 'Generating Plots'
 
     input:
-        tuple val(sample_name), path(stats_file)
+        tuple val(sample_name), val(files)
         //blast is files[0], clusters is files[1], fasta is files[2], stast is files[3]
 
+    output:
+        tuple val(sample_name), path("*extended_stats.txt"), emit: stats
+        path("*.pdf")
+
+    publishDir "${params.outdir}/${sample_name}/", mode: 'copy', overwrite:true, pattern:"*.extended_stats.txt"
+    publishDir "${params.outdir}/${sample_name}/FIGURES/", mode: 'copy', overwrite:true, pattern:"*.pdf"
 
     script:
     """
-    plots.R ${stats_file}
+    append_to_stats.py --stats_file ${files[3]} --cluster_file ${files[1]} \
+                        --fasta_file ${files[2]} \
+                        --new_stats_file ${sample_name}.extended_stats.txt \
+                        --minimum_cluster_size ${params.minimum_cluster_size} \
+                        --repeat ${params.repeat}
+    plots.R ${sample_name}.extended_stats.txt
     """
 }
 
@@ -173,15 +189,14 @@ process PLOT_CLUSTERS {
         //blast is files[0], clusters is files[1], fasta is files[2], stast is files[3]
 
     output:
-        tuple val(sample_name), path("*.stats_with_cluster.txt"), emit: stats
+        path("*.pdf")
+
+    publishDir "${params.outdir}/${sample_name}/FIGURES/", mode: 'copy', overwrite:true, pattern:"*.pdf"
 
     script:
     """
-    append_to_stats.py --stats_file ${files[3]} --cluster_file ${files[1]} \
-                        --new_stats_file ${sample_name}.stats_with_cluster.txt \
-                        --minimum_cluster_size ${params.minimum_cluster_size}
     plotClusters.py --stats_file ${files[3]} --blast_file ${files[0]} --cluster_file ${files[1]} \
-        --plot_file_name ${sample_name}.pdf --x_axis_length ${params.cluster_plot_width} \
+        --plot_file_name ${sample_name}.clustered_plotted.pdf --x_axis_length ${params.cluster_plot_width} \
         --TAS_perc ${params.TAS1_TAS3_percent_identity} --TAS2_perc ${params.TAS2_percent_identity} \
         --TAS_fraction ${params.TAS_length_fraction} --image_width_px ${params.image_width_px} \
         --image_height_px ${params.image_height_px} --minimum_cluster_size ${params.minimum_cluster_size}
@@ -196,6 +211,13 @@ process CONSENSUS_SEQ {
         tuple val(sample_name), val(files)
         path(ref_file)
         //blast is files[0], clusters is files[1], fasta is files[2], stast is files[3]
+
+    output:
+        path("*.consensus_seqs.fa")
+        path("*.pdf")
+
+    publishDir "${params.outdir}/${sample_name}/", mode: 'copy', overwrite:true, pattern:"*.consensus_seqs.fa"
+    publishDir "${params.outdir}/${sample_name}/CONSENSUS_FIGURES/", mode: 'move', overwrite:true, pattern:"*.pdf"
 
     script:
     """
@@ -390,34 +412,6 @@ process BARCODE_HAMMING_CHECK {
     """
 }
 
-process FINAL_TELO_STATS {
-    
-    label 'pombeTARPON'
-    tag "$params.run_name Final Plots and Telomere Stats Per Sample"
-
-    input:
-        path(input_files)
-
-    output:
-        path("combined_stats.txt"), emit: stats
-        path("combined_stats.VRR.txt"), emit: vrr_stats
-        path("*.pdf")
-
-    publishDir "${params.outdir}/", overwrite: true, mode: 'copy', pattern: "sample_stats.txt"
-    publishDir "${params.outdir}/", overwrite: true, mode: 'copy', pattern: "sample_stats.VRR.txt"
-    publishDir "${params.outdir}/RUN_STATS/FIGURES/", overwrite: true, mode: 'copy', pattern: "*.pdf"
-    
-    // add another r script that takes input files
-
-    script:
-    """
-    processTelomereStats.py --stat_files ${input_files} --vrr_length ${params.plot_vrr_length} --telo_length ${params.plot_telo_length}
-    sampleComparison_Plots.R ${params.plot_vrr_length} ${params.plot_telo_length}
-    sampleComparison_BarPlot.R ${params.plot_telo_length} ${params.plot_vrr_length} ${input_files}
-    """
-
-}
-
 process FASTQ_TO_BAM {
     label 'pombeTARPON'
     tag "$params.run_name Converting FASTQ to BAM"
@@ -454,27 +448,4 @@ process CHECK_AND_CONVERT_TO_BAM {
         """
         picard -Xmx100G FastqToSam FASTQ=${input_fh} OUTPUT=${sample}.bam SAMPLE_NAME=${sample}
         """
-}
-
-
-
-process TELOMERE_STATS {
-    label 'pombeTARPON'
-    tag "${sample_name} Telomere Statistics"
-
-    input:
-        tuple val(sample_name), path(telo_reads)
-
-    output:
-        tuple val(sample_name), path("*.filtered_telo.bam"), path("*.telo_stats.txt")
-
-    script:
-    """
-    find_telo.py --input_file ${telo_reads} --output_file ${sample_name}.filtered_telo.bam \
-                    --repeat ${params.repeat} \
-                    --canonical_start ${params.canonical_start_sequence} \
-                    --canonical_start_errors ${params.canonical_start_errors} \
-                    --capture_probe_sequence ${params.capture_probe_sequence} \
-                    --capture_probe_sequence_errors ${params.capture_probe_sequence_errors}
-    """
 }
