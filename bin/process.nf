@@ -98,12 +98,13 @@ process GENERATE_R_PLOTS {
     tag 'Generating Plots'
 
     input:
-        tuple val(sample_name), val(files)
+        tuple val(sample_name), path(stats_file)
         //blast is files[0], clusters is files[1], fasta is files[2], stast is files[3]
 
 
     script:
     """
+    plots.R ${stats_file}
     """
 }
 
@@ -171,8 +172,14 @@ process PLOT_CLUSTERS {
         tuple val(sample_name), val(files)
         //blast is files[0], clusters is files[1], fasta is files[2], stast is files[3]
 
+    output:
+        tuple val(sample_name), path("*.stats_with_cluster.txt"), emit: stats
+
     script:
     """
+    append_to_stats.py --stats_file ${files[3]} --cluster_file ${files[1]} \
+                        --new_stats_file ${sample_name}.stats_with_cluster.txt \
+                        --minimum_cluster_size ${params.minimum_cluster_size}
     plotClusters.py --stats_file ${files[3]} --blast_file ${files[0]} --cluster_file ${files[1]} \
         --plot_file_name ${sample_name}.pdf --x_axis_length ${params.cluster_plot_width} \
         --TAS_perc ${params.TAS1_TAS3_percent_identity} --TAS2_perc ${params.TAS2_percent_identity} \

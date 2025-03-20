@@ -46,7 +46,7 @@ workflow TELOMERE_STATS {
             CONSENSUS_SEQ(merged_fh_ch, file(params.rDNA_TAS_file)) //- create via python script, blast, and plot
         }  
 
-        GENERATE_R_PLOTS(merged_fh_ch)
+        GENERATE_R_PLOTS(PLOT_CLUSTERS.out.stats)
         // create plots and figures
             // bulk telomere length histogram
             // stranded bulk telo length histogram
@@ -62,6 +62,8 @@ workflow TELOMERE_STATS {
             // read qual vs telo quality
             // read ln vs read qual
             // telo len vs telo qual
+
+
             // telomere read compostion (repeat percentage GGTTAC vs GGTTACA etc)
             // Slippage of telomeric repeats
 

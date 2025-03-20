@@ -57,7 +57,7 @@ workflow {
     preprocess_out = PREPROCESS_FILES()
 
     // align to reference genome for html report
-    alignment = ALIGNMENT(preprocess_out.input, file(params.pombe_genome))
+    //alignment = ALIGNMENT(preprocess_out.input, file(params.pombe_genome))
 
     // take putative reads and identify telo start, telo end, and filter low quality telo sequences
     telo_results = TELOMERE_STATS(preprocess_out.reverse_complemented_reads)
