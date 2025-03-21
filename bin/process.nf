@@ -107,7 +107,7 @@ process GENERATE_R_PLOTS {
         //blast is files[0], clusters is files[1], fasta is files[2], stast is files[3]
 
     output:
-        tuple val(sample_name), path("*extended_stats.txt"), emit: stats
+        path("*extended_stats.txt"), emit: stats
         path("*.pdf")
 
     publishDir "${params.outdir}/${sample_name}/", mode: 'copy', overwrite:true, pattern:"*.extended_stats.txt"
@@ -120,7 +120,30 @@ process GENERATE_R_PLOTS {
                         --new_stats_file ${sample_name}.extended_stats.txt \
                         --minimum_cluster_size ${params.minimum_cluster_size} \
                         --repeat ${params.repeat}
-    plots.R ${sample_name}.extended_stats.txt
+    plots.R ${sample_name}.extended_stats.txt individual
+    """
+}
+
+process GENERATE_HTML_REPORT {
+    label 'pombeTARPON'
+    tag 'Generating HTML Report'
+
+    input:
+        path(stats_files)
+
+    output:
+        path("*.html")
+        path("*.pdf")
+
+    publishDir "${params.outdir}/", mode: 'copy', overwrite:true, pattern:"*.html"
+    publishDir "${params.outdir}/FIGURES/", mode: 'copy', overwrite:true, pattern:"*.pdf"
+
+    script:
+    """
+    appendStats.py --stats_file ${stats_files} --outFile combined.stats.txt
+    plots.R combined.stats.txt comparison
+    touch tmp.pdf
+    touch tmp.html
     """
 }
 

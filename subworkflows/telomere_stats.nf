@@ -56,8 +56,8 @@ workflow TELOMERE_STATS {
                 // bulk telomere length
                 // read counts (stranded) as different colors
 
-    //emit:
-        //telo_bam = telo_stats.coordinates_identified
-        //no_telo_coordinates = telo_stats.no_coordinates_identified
-        //telo_stats = telo_stats_file_ch.telo_stats
+    emit:
+        telo_bam = telo_stats.telo_bam
+        no_telo_coordinates = telo_coordinates.no_coordinates_identified
+        telo_stats = GENERATE_R_PLOTS.out.stats
 }

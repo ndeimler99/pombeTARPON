@@ -28,12 +28,13 @@ include { PREPROCESS_FILES } from "./subworkflows/file_preprocessing.nf"
 include { paramsHelp; paramsSummaryLog; samplesheetToList } from 'plugin/nf-schema'
 include { ALIGNMENT } from "./bin/process.nf"
 include { TELOMERE_STATS } from "./subworkflows/telomere_stats.nf"
+include { GENERATE_HTML_REPORT } from "./bin/process.nf"
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     Run Workflow
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
-WorkflowMain.initialise(workflow, params, log)
+//WorkflowMain.initialise(workflow, params, log)
 
 workflow {
 
@@ -63,7 +64,7 @@ workflow {
     telo_results = TELOMERE_STATS(preprocess_out.reverse_complemented_reads)
 
     // generate html report
-    //GENEARTE_HTML_REPORT(alignment.stats.collect())
+    GENERATE_HTML_REPORT(telo_results.telo_stats.collect())
 
 
 
