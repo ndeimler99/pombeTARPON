@@ -1,8 +1,8 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema",
-    "$id": "https://raw.githubusercontent.com/ndeimler99/TArPON/master/nextflow_schema.json",
-    "title": "ndeimler99/TArPON pipeline parameters",
-    "description": "A pipeline to Analyze Telomeric sequences from Nanopore Sequencing",
+    "$id": "https://raw.githubusercontent.com/ndeimler99/pombeTARPON/master/nextflow_schema.json",
+    "title": "ndeimler99/pombeTARPON",
+    "description": "A pipeline to Analyze Pombe Specific Telomeric sequences from Nanopore Sequencing",
     "type": "object",
     "definitions": {
         "Input_Options": {
@@ -41,6 +41,24 @@
                     "type": "boolean",
                     "default" : false
                 },
+                "nanopore_barcodes": {
+                    "type":"boolean",
+                    "default":false
+                },
+                "sample_file":{
+                    "type": "string",
+                    "format": "file-path",
+                    "pattern": "\\S+csv$",
+                    "title": "Sample File",
+                    "description": "CSV file containing sample names and barcodes to use for demultiplexing. If no adaptor sequence is provided the barcodes will also be used for determing the end of the telomere",
+                    "fa_icon": "fas fa-file-csv"
+                },
+                "barcode_errors":{
+                    "type":"number",
+                    "default":3,
+                    "title":"Allowed Errors in Barcode Sequences",
+                    "description": "Number of allowed errors in the barcode sequence. It is recomended this value by 1/8 the length of the barcode assuming the hamming distance between barcodes is greater than 1/8 the barcode length"
+                },
                 "capture_probe_sequence": {
                     "type":"string",
                     "title":"Telomere Capture Sequence",
@@ -51,24 +69,6 @@
                     "default":2,
                     "title": "Allowed Errors in Adaptor Sequence",
                     "description": "Number of allowed errors to be found in the capture probe sequence. It is recomended this value be 2 for a 12 nucleotide adaptor sequence. For each additional 8bp, the number of errors should be increased by 1"
-                },
-                "sample_file":{
-                    "type": "string",
-                    "format": "file-path",
-                    "pattern": "\\S+csv$",
-                    "title": "Sample File",
-                    "description": "CSV file containing sample names and barcodes to use for demultiplexing. If no adaptor sequence is provided the barcodes will also be used for determing the end of the telomere",
-                    "fa_icon": "fas fa-file-csv"
-                },
-                "nanopore_barcodes": {
-                    "type":"boolean",
-                    "default":false
-                },
-                "barcode_errors":{
-                    "type":"number",
-                    "default":3,
-                    "title":"Allowed Errors in Barcode Sequences",
-                    "description": "Number of allowed errors in the barcode sequence. It is recomended this value by 1/8 the length of the barcode assuming the hamming distance between barcodes is greater than 1/8 the barcode length"
                 }
             }
         },
