@@ -205,5 +205,55 @@ if (args[2] == "individual"){
       #004D40
 } else if (args[2] == "comparison"){
 
-      final_telo_counts <- data_table %>% group_by()
+  data_table <- read.table("combined.stats.txt", header=TRUE, sep="\t")
+  
+  final_telo_counts <- data_table %>% group_by(Sample, strand) %>%
+        summarize(n=n())
+  final_count_comparison <- ggplot(data=final_telo_counts) +
+    geom_bar(mapping=aes(x=Sample, y=n, fill=strand), stat="identity") +
+    theme_minimal() +
+    xlab("Sample") + ylab("Telomere Read Count") +
+    theme(axis.title=element_text(size=20),
+          axis.text=element_text(size=15),
+          legend.title=element_text(size=20),
+          legend.text=element_text(size=15),
+          axis.text.x = element_text(angle=45, hjust=1, vjust=1)) +
+    scale_fill_manual(breaks=c("C", "G"), values=c("#1E88E5", "#FFC107"), name="Strand")
+  ggsave("telomere_count_by_sample.pdf", device="pdf", width=12, height=10, plot=final_count_comparison)
+  
+  telo_length_boxplot_comparison <- ggplot(data=data_table) +
+    geom_boxplot(mapping=aes(x=Sample, y=telo_length, fill=Sample)) +
+    theme_minimal() +
+    xlab("Sample") + ylab("Telomere Lenght (bp)") +
+    theme(axis.title=element_text(size=20),
+          axis.text=element_text(size=15),
+          legend.title=element_text(size=20),
+          legend.text=element_text(size=15),
+          axis.text.x = element_text(angle=45, hjust=1, vjust=1))
+  ggsave("telomere_length_boxplot_by_sample.pdf", device="pdf", width=12, height=10, plot=telo_length_boxplot_comparison)
+  
+  telo_lengths_for_binning <- c(525, 475, 425, 375, 325, 275, 225, 175, 125, 75, 25)
+  
+  # 0-50, 50-100, 150-200, 200-250, 250-300, 30-350, 400-450, 450-500, 500-550, 550-600, 600+
+  data_table$bin_telo_length <- unlist(lapply(data_table$telo_length, function(x) telo_lengths_for_binning[which.min(abs(telo_lengths_for_binning-x))]))
+  data_table$bin_telo_length <- factor(data_table$bin_telo_length, levels=c(525, 475, 425, 375, 325, 275, 225, 200, 175, 125, 75, 25))
+  
+  telo_bar_hist <- ggplot(data=data_table) +
+    geom_bar(mapping=aes(x=Sample, fill=bin_telo_length), position="fill") +
+    theme_minimal() +
+    theme(axis.title.x = element_blank(),
+          axis.text.x = element_blank(),
+          axis.text = element_text(size=15),
+          axis.title=element_text(size=20),
+          legend.text=element_text(size=15),
+          legend.title=element_text(size=20)) +
+    ylab("Proportion of Telomere Reads") +
+    guides(fill=guide_legend(title="Telomere Length (BP)")) +
+    scale_y_continuous(labels = scales::percent) +
+    scale_fill_manual(breaks=c(525, 475, 425, 375, 325, 275, 225, 175, 125, 75, 25),
+                      labels=c("500+", "450-499","400-449", "350-399", "300-349", "250-299", "200-249", "150-199", "100-149", "50-99", "0-49"),
+                      values=c("#F8766D", "#E68613", "#ABA300", "#0CB702", "#00BE67", "#00BFC4", "#00A9FF", "#8494FF", "#C77CFF", "#FF61CC", "#FF68A1"))
+
+  ggsave("telo_length_bar_plot_by_sample.pdf", plot = telo_bar_hist, device="pdf", width=6, height=10)
+  
 }
