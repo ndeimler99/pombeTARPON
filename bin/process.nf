@@ -142,7 +142,6 @@ process GENERATE_HTML_REPORT {
     """
     appendStats.py --stats_file ${stats_files} --outFile combined.stats.txt
     plots.R combined.stats.txt comparison
-    touch tmp.pdf
     touch tmp.html
     """
 }

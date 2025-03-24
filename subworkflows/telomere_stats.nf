@@ -52,10 +52,6 @@ workflow TELOMERE_STATS {
             // Slippage of telomeric repeats
 
 
-            // sample comparison plots
-                // bulk telomere length
-                // read counts (stranded) as different colors
-
     emit:
         telo_bam = telo_stats.telo_bam
         no_telo_coordinates = telo_coordinates.no_coordinates_identified
