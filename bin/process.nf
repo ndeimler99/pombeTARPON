@@ -75,7 +75,8 @@ process ALIGNMENT {
     """
     samtools fastq ${input_fh} > ${sample_name}.fastq
     gzip ${sample_name}.fastq
-    minimap2 -ax map-ont ${POMBE_GENOME_FILE} ${sample_name}.fastq.gz > ${sample_name}.alignment.bam 2> ${sample_name}.alignment.err
+    minimap2 -ax map-ont ${POMBE_GENOME_FILE} ${sample_name}.fastq.gz > ${sample_name}.alignment.sam 2> ${sample_name}.alignment.err
+    samtools view -h -b ${sample_name}.alignment.sam > ${sample_name}.alignment.bam
     alignment_stats.py --alignment_file ${sample_name}.alignment.bam --stats_file ${sample_name}.stats.txt --sample ${sample_name}
     alignment_plots.R ${sample_name}.stats.txt
     """
@@ -211,17 +212,18 @@ process PLOT_CLUSTERS {
         //blast is files[0], clusters is files[1], fasta is files[2], stast is files[3]
 
     output:
-        path("*.pdf")
+        path("*.png")
 
-    publishDir "${params.outdir}/${sample_name}/FIGURES/", mode: 'copy', overwrite:true, pattern:"*.pdf"
+    publishDir "${params.outdir}/${sample_name}/FIGURES/", mode: 'copy', overwrite:true, pattern:"*.png"
 
     script:
     """
     plotClusters.py --stats_file ${files[3]} --blast_file ${files[0]} --cluster_file ${files[1]} \
-        --plot_file_name ${sample_name}.clustered_plotted.pdf --x_axis_length ${params.cluster_plot_width} \
+        --plot_file_name ${sample_name}.clustered_plotted.png --x_axis_length ${params.cluster_plot_width} \
         --TAS_perc ${params.TAS1_TAS3_percent_identity} --TAS2_perc ${params.TAS2_percent_identity} \
         --TAS_fraction ${params.TAS_length_fraction} --image_width_px ${params.image_width_px} \
-        --image_height_px ${params.image_height_px} --minimum_cluster_size ${params.minimum_cluster_size}
+        --image_height_px ${params.image_height_px} --minimum_cluster_size ${params.minimum_cluster_size} \
+        --color_dict ${params.color_dict}
     """
 }
 

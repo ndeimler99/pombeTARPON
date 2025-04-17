@@ -41,11 +41,14 @@ def blast_results(blast_file, max_len, TAS_perc, TAS2_perc, TAS_fraction):
             line = line.strip().split()
             if line[0] not in blast_dict:
                 blast_dict[line[0]] = []
-            if int(line[13]) - int(line[7]) > max_len: 
-                line[7] = max_len
-            elif int(line[13]) - int(line[8]) > max_len:
+            
+            if int(line[13]) - int(line[8]) > max_len:
+                #line[8] = max_len
                 continue
-                
+            if int(line[13]) - int(line[7]) > max_len: 
+                line[7] = int(line[13]) - max_len
+            
+
             if "TAS" in line[1] or "TERRA" in line[1]:
                 if line[1] == 'TAS2' and float(line[2]) > TAS2_perc:
                     blast_dict[line[0]].append((line[1],int(line[13]) - int(line[8]), int(line[13]) - int(line[7])))
@@ -59,6 +62,14 @@ def blast_results(blast_file, max_len, TAS_perc, TAS2_perc, TAS_fraction):
 
     return blast_dict
 
+def get_color_dict(color_dict_file):
+    color_dict = {}
+    with open(color_dict_file, "r") as fh:
+        for line in fh:
+            line = line.strip().split()
+            color_dict[line[0]] = [float(i) for i in line[1].split(",")]
+    return color_dict
+
 def flatten(xss):
     return [x for xs in xss for x in xs]
 
@@ -71,8 +82,8 @@ def main(args):
     args.image_width_px  = int(args.image_width_px)
     args.image_height_px = int(args.image_height_px)
     args.minimum_cluster_size = int(args.minimum_cluster_size)
+    args.color_dict = get_color_dict(args.color_dict)    
 
-    color_dict = {'TAS1':(0.84,0.10,0.37), 'TAS2':(0.1,0.53,0.89), 'TAS3':(1,0.76, 0.03), '28S_rRNA':(0,0.30,0.25), '18S_rRNA':(0.98,0.07,0.92)}
 
     stats_dict = stats_results(args.stats_file)
     if args.x_axis_length == 0:
@@ -97,8 +108,27 @@ def main(args):
     ctx.set_source_rgb(1,1,1)
     ctx.fill()
 
-    max_telo_length = max([stats_dict[read]["telo_length"] for read in stats_dict if read in flatten(list(cluster_dict.values()))])
-    x_offset_left=int(args.image_width_px * 0.05) + max_telo_length + 50
+    mean_sd_dict = {}
+    for cluster in cluster_dict:
+        telo_lengths = []
+        for read in cluster_dict[cluster]:
+            telo_lengths.append(stats_dict[read]["telo_length"])
+        mean_sd_dict[cluster] = {"mean":np.mean(telo_lengths), "sd":np.std(telo_lengths), "q2": np.quantile(telo_lengths, 0.5), "q3":np.quantile(telo_lengths, 0.75)}
+        mean_sd_dict[cluster]["iqr"] = (mean_sd_dict[cluster]["q3"] - mean_sd_dict[cluster]["q2"]) * 3
+
+    telo_lengths_to_plot = []
+    for cluster in cluster_dict:
+        if len(cluster_dict[cluster]) < args.minimum_cluster_size:
+            continue
+        for read in cluster_dict[cluster]:
+            if stats_dict[read]["telo_length"] > mean_sd_dict[cluster]["mean"] + mean_sd_dict[cluster]["iqr"]:
+                continue
+            telo_lengths_to_plot.append(stats_dict[read]["telo_length"])
+
+    #max_telo_length = max([stats_dict[read]["telo_length"] for read in stats_dict if read in flatten(list(cluster_dict.values())) and stats_dict[read]["telo_length"]])
+    max_telo_length = max(telo_lengths_to_plot)
+    telo_plot_width = int(args.image_width_px) * 0.4
+    x_offset_left=int(args.image_width_px * 0.05) + telo_plot_width + 50
     x_offset_right=int(args.image_width_px * 0.05)
     y_offset_top=int(args.image_width_px * 0.05)
     y_offset_bottom=int(args.image_width_px * 0.05)
@@ -107,10 +137,12 @@ def main(args):
     # ctx.rectangle(y_offset_top, args.image_height_px - y_offset_bottom, args.image_width_px-x_offset_right*2, 1)
     # ctx.fill()
 
-    read_count = sum([len(cluster_dict[cluster]) for cluster in cluster_dict if len(cluster_dict[cluster]) >= args.minimum_cluster_size])
+    #read_count = sum([len(cluster_dict[cluster]) for cluster in cluster_dict if len(cluster_dict[cluster]) >= args.minimum_cluster_size])
+    read_count = len(telo_lengths_to_plot)
     cluster_gap_size = int((len(cluster_dict) - 1) * args.image_height_px * 0.02)
     sequence_height = (args.image_height_px-y_offset_bottom-y_offset_top-cluster_gap_size) / read_count
     nucl_width = (args.image_width_px - x_offset_left - x_offset_right) / args.x_axis_length
+    telo_nucl_width = (telo_plot_width / max_telo_length)
 
     ctx.set_source_rgb(0,0,0)
     ctx.rectangle(x_offset_left, args.image_height_px-y_offset_bottom, args.image_width_px-x_offset_left - x_offset_right, 3)
@@ -130,32 +162,47 @@ def main(args):
         #a += 0.2
         #ctx.set_source_rgb(a, 0 , 0)
         telo_lengths = []
-        for j,read in enumerate(cluster_dict[cluster]):
+        j = 0
+        for k,read in enumerate(cluster_dict[cluster]):
+
             if read not in stats_dict:
                 continue
 
+            if stats_dict[read]["telo_length"] > mean_sd_dict[cluster]["mean"] + mean_sd_dict[cluster]["iqr"]:
+                continue
+            
+            j = j + 1
             ctx.set_source_rgb(0.4,0.4,0.4)
             ctx.rectangle(x_offset_left, args.image_height_px - y_offset_bottom - ((j + 1) * sequence_height) - seq_offset, stats_dict[read]["read_length"] * nucl_width, sequence_height/2)
             ctx.fill()
 
             if read in blast_dict:
                 for item in blast_dict[read]:
-                    ctx.set_source_rgb(color_dict[item[0]][0],color_dict[item[0]][1],color_dict[item[0]][2])
+                    ctx.set_source_rgb(args.color_dict[item[0]][0],args.color_dict[item[0]][1],args.color_dict[item[0]][2])
                     ctx.rectangle(x_offset_left + item[1]*nucl_width, args.image_height_px - y_offset_bottom - ((j + 1)* sequence_height) - seq_offset, item[2]*nucl_width-item[1] * nucl_width, sequence_height)
                     ctx.fill()
                 
-            
             if stats_dict[read]["telo_length"] is not None:
-                ctx.set_source_rgb(0.2,0.2,0.2)
-                ctx.rectangle(x_offset_left - stats_dict[read]["telo_length"], args.image_height_px - y_offset_bottom - ((j + 1)* sequence_height) - seq_offset, stats_dict[read]["telo_length"], sequence_height)
+                ctx.set_source_rgb(0.1,0.1,0.1)
+                ctx.rectangle(x_offset_left - (stats_dict[read]["telo_length"] * telo_nucl_width), args.image_height_px - y_offset_bottom - ((j + 1)* sequence_height) - seq_offset, stats_dict[read]["telo_length"] * telo_nucl_width, sequence_height)
                 ctx.fill()
                 telo_lengths.append(stats_dict[read]["telo_length"])
+
         ctx.set_source_rgb(1,0,0)
-        ctx.rectangle(x_offset_left - sum(telo_lengths)/len(telo_lengths), args.image_height_px - y_offset_bottom - ((j + 1)* sequence_height) - seq_offset, 5, len(cluster_dict[cluster])*sequence_height)
-        ctx.rectangle(x_offset_left - sum(telo_lengths)/len(telo_lengths) - np.std(telo_lengths), args.image_height_px - y_offset_bottom - ((j + 1)* sequence_height) - seq_offset + len(cluster_dict[cluster])*sequence_height/2, np.std(telo_lengths)*2, 2)
-        ctx.rectangle(x_offset_left - sum(telo_lengths)/len(telo_lengths) - np.std(telo_lengths), args.image_height_px - y_offset_bottom - ((j + 1)* sequence_height) - seq_offset + len(cluster_dict[cluster])*sequence_height*0.25, 3, len(cluster_dict[cluster])*sequence_height*0.5)
-        ctx.rectangle(x_offset_left - sum(telo_lengths)/len(telo_lengths) + np.std(telo_lengths), args.image_height_px - y_offset_bottom - ((j + 1)* sequence_height) - seq_offset + len(cluster_dict[cluster])*sequence_height*0.25, 3, len(cluster_dict[cluster])*sequence_height*0.5)
+        ctx.rectangle(x_offset_left - sum(telo_lengths) * telo_nucl_width/len(telo_lengths), args.image_height_px - y_offset_bottom - ((j + 1)* sequence_height) - seq_offset, 5, j*sequence_height)
+        ctx.rectangle(x_offset_left - sum(telo_lengths)* telo_nucl_width/len(telo_lengths) - np.std(telo_lengths) * telo_nucl_width, args.image_height_px - y_offset_bottom - ((j + 1)* sequence_height) - seq_offset + j*sequence_height/2, np.std(telo_lengths)*2 * telo_nucl_width, 2)
+        ctx.rectangle(x_offset_left - sum(telo_lengths)* telo_nucl_width/len(telo_lengths) - np.std(telo_lengths) * telo_nucl_width, args.image_height_px - y_offset_bottom - ((j + 1)* sequence_height) - seq_offset + j*sequence_height*0.25, 3, j*sequence_height*0.5)
+        ctx.rectangle(x_offset_left - sum(telo_lengths)* telo_nucl_width/len(telo_lengths) + np.std(telo_lengths) * telo_nucl_width, args.image_height_px - y_offset_bottom - ((j + 1)* sequence_height) - seq_offset + j*sequence_height*0.25, 3, j*sequence_height*0.5)   
         ctx.fill()
+
+        # ctx.set_source_rgb(0,1,0)
+        # ctx.rectangle(x_offset_left - np.quantile(telo_lengths, 0.5) * telo_nucl_width, args.image_height_px - y_offset_bottom - ((j + 1)* sequence_height) - seq_offset, 5, j*sequence_height)
+        # ctx.rectangle(x_offset_left - np.quantile(telo_lengths, 0.25) * telo_nucl_width, args.image_height_px - y_offset_bottom - ((j + 1)* sequence_height) - seq_offset + j*sequence_height*0.25, 5, j*sequence_height*0.5)
+        # ctx.rectangle(x_offset_left - np.quantile(telo_lengths, 0.75) * telo_nucl_width, args.image_height_px - y_offset_bottom - ((j + 1)* sequence_height) - seq_offset + j*sequence_height*0.25, 5, j*sequence_height*0.5)
+        # ctx.rectangle(x_offset_left - np.quantile(telo_lengths, 0.75) * telo_nucl_width, args.image_height_px - y_offset_bottom - ((j + 1)* sequence_height) - seq_offset + j*sequence_height / 2, np.quantile(telo_lengths, 0.75)*telo_nucl_width - np.quantile(telo_lengths, 0.25) * telo_nucl_width, 2)
+        # ctx.fill()
+
+
         ctx.set_source_rgb(0,0,0)
         ctx.move_to(10, args.image_height_px - y_offset_bottom - ((j/2 + 1)* sequence_height) - seq_offset + sequence_height * 0.5)
         ctx.text_path('Clust-{}'.format(cluster))
@@ -176,20 +223,28 @@ def main(args):
     ctx.set_source_rgb(0,0,0)
     ctx.rectangle(x_offset_right, args.image_height_px-y_offset_bottom, x_offset_left-x_offset_right, 3)
     ctx.fill()
-    for i in range(100, max_telo_length + 50, 100):
+    if max_telo_length < 1000:
+        val = 100
+    elif max_telo_length < 2000:
+        val = 500
+    elif max_telo_length < 5000:
+        val = 1000
+    else:
+        val = 2000
+    for i in range(val, max_telo_length, val):
         a,b,width,height,c,d = ctx.text_extents('{}'.format(i))
-        ctx.rectangle(x_offset_left - i - 2.5, args.image_height_px-y_offset_bottom, 5, 5)
+        ctx.rectangle(x_offset_left - i*telo_nucl_width - 2.5, args.image_height_px-y_offset_bottom, 5, 5)
         ctx.fill()
-        ctx.move_to(x_offset_left - i - width/2 - 2.5, args.image_height_px-y_offset_bottom + 25)
+        ctx.move_to(x_offset_left - i*telo_nucl_width - width/2 - 2.5, args.image_height_px-y_offset_bottom + 25)
         ctx.text_path('{}'.format(i))
         ctx.fill()
         
-    for i,seq in enumerate(color_dict):
-        ctx.set_source_rgb(color_dict[seq][0], color_dict[seq][1], color_dict[seq][2])
-        ctx.rectangle(args.image_width_px/2 - 150*(len(color_dict)/2) + i*150, 25, 25, 25)
+    for i,seq in enumerate(args.color_dict):
+        ctx.set_source_rgb(args.color_dict[seq][0], args.color_dict[seq][1], args.color_dict[seq][2])
+        ctx.rectangle(args.image_width_px/2 - 150*(len(args.color_dict)/2) + i*150, 25, 25, 25)
         ctx.fill()
         ctx.set_source_rgb(0,0,0)
-        ctx.move_to(args.image_width_px/2 - 150*(len(color_dict)/2) + i*150 + 30, 50-25/4)
+        ctx.move_to(args.image_width_px/2 - 150*(len(args.color_dict)/2) + i*150 + 30, 50-25/4)
         ctx.text_path('{}'.format(seq))
         ctx.fill()
 
@@ -210,6 +265,8 @@ def argparser():
     parser.add_argument("--image_width_px", required=True)
     parser.add_argument("--image_height_px", required=True)
     parser.add_argument("--minimum_cluster_size", required=True)
+    parser.add_argument("--color_dict", required=True)
+    #   default  {'TAS1':(0.84,0.10,0.37), 'TAS2':(0.1,0.53,0.89), 'TAS3':(1,0.76, 0.03), '28S_rRNA':(0,0.30,0.25), '18S_rRNA':(0.98,0.07,0.92)}")
     return parser
 
 if __name__ == "__main__":
