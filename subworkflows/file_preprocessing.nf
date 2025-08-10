@@ -5,6 +5,7 @@
 */
 include { CHECK_AND_CONVERT_TO_BAM } from "../bin/process.nf"
 include { ISOLATE_PUTATIVE_TELOMERES } from "../bin/process.nf"
+include { BLAST_FOR_ISOLATION } from "../bin/process.nf"
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     Run Workflow
@@ -28,6 +29,10 @@ include { ISOLATE_PUTATIVE_TELOMERES } from "../bin/process.nf"
         
             // isolate telomere reads and return pre-isolated channel, isolate_channel, removed channel
             isolation_results = ISOLATE_PUTATIVE_TELOMERES(bam_ch)
+            //isolation_results_repeat = ISOLATE_PUTATIVE_TELOMERES(bam_ch)
+            // isolation_results_blast = BLAST_FOR_ISOLATION(bam_ch, file(params.rDNA_TAS_file))
+
+            // bam_ch.mix(isolation_results_repeat, isolation_results_blast).groupTuple().view()
         }
         // if --nanopore_barcodes is true
         else if (params.nanopore_barcodes){

@@ -114,19 +114,19 @@ def main(args):
         for read in cluster_dict[cluster]:
             telo_lengths.append(stats_dict[read]["telo_length"])
         mean_sd_dict[cluster] = {"mean":np.mean(telo_lengths), "sd":np.std(telo_lengths), "q2": np.quantile(telo_lengths, 0.5), "q3":np.quantile(telo_lengths, 0.75)}
-        mean_sd_dict[cluster]["iqr"] = (mean_sd_dict[cluster]["q3"] - mean_sd_dict[cluster]["q2"])
+        mean_sd_dict[cluster]["iqr"] = (mean_sd_dict[cluster]["q3"] - mean_sd_dict[cluster]["q2"]) * 3
 
     telo_lengths_to_plot = []
     for cluster in cluster_dict:
         if len(cluster_dict[cluster]) < args.minimum_cluster_size:
             continue
         for read in cluster_dict[cluster]:
-            if stats_dict[read]["telo_length"] > mean_sd_dict[cluster]["q2"] + mean_sd_dict[cluster]["iqr"]:
-                continue
+#            if stats_dict[read]["telo_length"] > mean_sd_dict[cluster]["mean"] + mean_sd_dict[cluster]["iqr"]:
+#                continue
             telo_lengths_to_plot.append(stats_dict[read]["telo_length"])
 
     #max_telo_length = max([stats_dict[read]["telo_length"] for read in stats_dict if read in flatten(list(cluster_dict.values())) and stats_dict[read]["telo_length"]])
-    max_telo_length = max(telo_lengths_to_plot)
+    max_telo_length = 6500
     telo_plot_width = int(args.image_width_px) * 0.4
     x_offset_left=int(args.image_width_px * 0.05) + telo_plot_width + 50
     x_offset_right=int(args.image_width_px * 0.05)
@@ -168,8 +168,8 @@ def main(args):
             if read not in stats_dict:
                 continue
 
-            if stats_dict[read]["telo_length"] > mean_sd_dict[cluster]["q2"] + mean_sd_dict[cluster]["iqr"]:
-                continue
+#            if stats_dict[read]["telo_length"] > mean_sd_dict[cluster]["mean"] + mean_sd_dict[cluster]["iqr"]:
+#                continue
             
             j = j + 1
             ctx.set_source_rgb(0.4,0.4,0.4)
@@ -188,12 +188,12 @@ def main(args):
                 ctx.fill()
                 telo_lengths.append(stats_dict[read]["telo_length"])
 
-        ctx.set_source_rgb(1,0,0)
-        ctx.rectangle(x_offset_left - sum(telo_lengths) * telo_nucl_width/len(telo_lengths), args.image_height_px - y_offset_bottom - ((j + 1)* sequence_height) - seq_offset, 5, j*sequence_height)
-        ctx.rectangle(x_offset_left - sum(telo_lengths)* telo_nucl_width/len(telo_lengths) - np.std(telo_lengths) * telo_nucl_width, args.image_height_px - y_offset_bottom - ((j + 1)* sequence_height) - seq_offset + j*sequence_height/2, np.std(telo_lengths)*2 * telo_nucl_width, 2)
-        ctx.rectangle(x_offset_left - sum(telo_lengths)* telo_nucl_width/len(telo_lengths) - np.std(telo_lengths) * telo_nucl_width, args.image_height_px - y_offset_bottom - ((j + 1)* sequence_height) - seq_offset + j*sequence_height*0.25, 3, j*sequence_height*0.5)
-        ctx.rectangle(x_offset_left - sum(telo_lengths)* telo_nucl_width/len(telo_lengths) + np.std(telo_lengths) * telo_nucl_width, args.image_height_px - y_offset_bottom - ((j + 1)* sequence_height) - seq_offset + j*sequence_height*0.25, 3, j*sequence_height*0.5)   
-        ctx.fill()
+        # ctx.set_source_rgb(1,0,0)
+        # ctx.rectangle(x_offset_left - sum(telo_lengths) * telo_nucl_width/len(telo_lengths), args.image_height_px - y_offset_bottom - ((j + 1)* sequence_height) - seq_offset, 5, j*sequence_height)
+        # ctx.rectangle(x_offset_left - sum(telo_lengths)* telo_nucl_width/len(telo_lengths) - np.std(telo_lengths) * telo_nucl_width, args.image_height_px - y_offset_bottom - ((j + 1)* sequence_height) - seq_offset + j*sequence_height/2, np.std(telo_lengths)*2 * telo_nucl_width, 2)
+        # ctx.rectangle(x_offset_left - sum(telo_lengths)* telo_nucl_width/len(telo_lengths) - np.std(telo_lengths) * telo_nucl_width, args.image_height_px - y_offset_bottom - ((j + 1)* sequence_height) - seq_offset + j*sequence_height*0.25, 3, j*sequence_height*0.5)
+        # ctx.rectangle(x_offset_left - sum(telo_lengths)* telo_nucl_width/len(telo_lengths) + np.std(telo_lengths) * telo_nucl_width, args.image_height_px - y_offset_bottom - ((j + 1)* sequence_height) - seq_offset + j*sequence_height*0.25, 3, j*sequence_height*0.5)   
+        # ctx.fill()
 
         # ctx.set_source_rgb(0,1,0)
         # ctx.rectangle(x_offset_left - np.quantile(telo_lengths, 0.5) * telo_nucl_width, args.image_height_px - y_offset_bottom - ((j + 1)* sequence_height) - seq_offset, 5, j*sequence_height)
@@ -205,7 +205,7 @@ def main(args):
 
         ctx.set_source_rgb(0,0,0)
         ctx.move_to(10, args.image_height_px - y_offset_bottom - ((j/2 + 1)* sequence_height) - seq_offset + sequence_height * 0.5)
-        ctx.text_path('Clust-{}'.format(cluster))
+        #ctx.text_path('Clust-{}'.format(cluster))
         ctx.fill()
         seq_offset += j*sequence_height
         seq_offset += int(args.image_height_px * 0.02)

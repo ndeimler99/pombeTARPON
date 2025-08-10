@@ -13,12 +13,12 @@ def main(args):
     with open(args.stats_file, "w") as stats_fh:
         stats_fh.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format("read_id", "strand", "read_length", "read_quality", "telo_start", "telo_end", "telo_length", "telo_quality"))
         for aln in aln_file:
-            print(aln.query_name)
-            print(aln.get_tag("XT"))
-            print(aln.get_tag("XE"))
-            print(len(aln.query_sequence))
-            print(aln.query_sequence[aln.get_tag("XT"):aln.get_tag("XE")])
-            print(aln.query_qualities[aln.get_tag("XT"):aln.get_tag("XE")])
+            # print(aln.query_name)
+            # print(aln.get_tag("XT"))
+            # print(aln.get_tag("XE"))
+            # print(len(aln.query_sequence))
+            # print(aln.query_sequence[aln.get_tag("XT"):aln.get_tag("XE")])
+            # print(aln.query_qualities[aln.get_tag("XT"):aln.get_tag("XE")])
             stats_fh.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(aln.query_name, aln.get_tag("XS"), len(aln.query_sequence), 
                                                                         avg_quality(aln.query_qualities), aln.get_tag("XT"), aln.get_tag("XE"),
                                                                         aln.get_tag("XL"), avg_quality(aln.query_qualities[aln.get_tag("XT"):aln.get_tag("XE")])))

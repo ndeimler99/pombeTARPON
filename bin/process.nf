@@ -9,6 +9,7 @@ process ISOLATE_PUTATIVE_TELOMERES {
         tuple val(sample_name), path(input_file, stageAs: "input.bam")
     
     output:
+//        tuple val(sample_name), path("putative_read_ids.txt"), emit: putative_reads
         tuple val(sample_name), path("*putative_reads.bam"), emit: putative_reads
         tuple val(sample_name), path("*non_telomeric.bam"), emit: non_telomeric
         tuple val(sample_name), path("*chimeric.bam"), emit: chimeric_reads
@@ -25,6 +26,30 @@ process ISOLATE_PUTATIVE_TELOMERES {
                                         --min_repeat_threshold ${params.minimum_strand_percentage} \
                                         --chimeric_file ${sample_name}.chimeric.bam \
                                         --reverse_complement_file ${sample_name}.reverse_complemented.bam
+    """
+    // isolate_putative_telomeric_reads.py --input_file ${input_file} \
+    //                                         --repeat ${params.repeat}  \
+    //                                         --repeat_count ${params.repeat_count} \
+    //                                         --fragment_read_length ${params.read_fragment_length} \
+    //                                         --putative_file ${sample_name}.putative_reads.bam \
+}
+
+process BLAST_FOR_ISOLATION {
+    label 'pombeTARPON'
+    tag 'Blasting Against TAS and rDNA Sequences'
+    stageInMode 'copy'
+
+    input:
+        tuple val(sample_name), path(input_file, stageAs: "input.bam")
+        path(ref_file)
+    
+    output:
+        tuple val(sample_name), path("*.blast_results.txt"), emit: blast_results
+
+    script:
+    """
+    samtools fasta ${input_file} > ${sample_name}.fasta
+    blastn -query ${sample_name}.fasta -subject ${ref_file} -outfmt "6 qseqid sseqid pident length slen mismatch gapopen qstart qend sstart send evalue bitscore qlen" > ${sample_name}.blast_results.txt
     """
 }
 
@@ -54,6 +79,7 @@ process IDENTIFY_TELO_CORDINATES {
                                         --telo_start_canonical_errors ${params.canonical_start_errors} \
                                         --telo_start_repeat_count ${params.telo_start_repeat_count}\
                                         --telo_start_repeat_errors ${params.telo_start_error_count}
+
     """
 }
 

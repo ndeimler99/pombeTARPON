@@ -4,6 +4,13 @@ import argparse
 import pysam
 import regex
 
+# def get_ratio(seq, repeat, errors):
+#     matches = list(regex.finditer(r'(%s){e<=%s}' % (repeat, errors), seq, overlapped=True))
+#     summation = 0
+#     for match in matches:
+#         summation += match.span()[1] - match.span()[0]
+#     return summation
+
 def main(args):
 
     args.telo_end_repeat_errors = int(args.telo_end_repeat_errors)
@@ -11,6 +18,7 @@ def main(args):
     args.telo_start_canonical_errors = int(args.telo_start_canonical_errors)
     args.telo_start_repeat_count = int(args.telo_start_repeat_count)
     args.telo_start_repeat_errors = int(args.telo_start_repeat_errors)
+
     if args.repeat == "GGTTAC":
         args.repeat = 'GGTTAC((AC)|A){0,1}G{0,7}?'
 
@@ -36,7 +44,7 @@ def main(args):
                         continue
                     telo_seq = aln.query_sequence[match.span()[0]:telo_end]
                     freq = telo_seq.count("GGTTAC")*6 / len(telo_seq) * 100
-                    if freq > 25:
+                    if freq >= 50:
                         telo_start = match.span()[0]
                         aln.set_tag("XT", telo_start)
                         break
@@ -48,16 +56,18 @@ def main(args):
                     if match.span()[0] > telo_end:
                         continue
                     if telo_start is None:
-                        telo_seq = aln.query_sequence[match.span()[0]:match.span()[0]+100] 
+                        telo_seq = aln.query_sequence[match.span()[0]:telo_end] 
+                        #freq = get_ratio(telo_seq, args.repeat, args.telo_start_repeat_errors) / len(telo_seq) * 100
                         freq = telo_seq.count("GGTTAC")*6 / len(telo_seq) * 100
-                        if freq > 25:
+                        if freq >= 50:
                             telo_start = match.span()[0]
                             aln.set_tag("XT", telo_start)
                             break
                     elif match.span()[0] < telo_start:
-                        telo_seq = aln.query_sequence[match.span()[0]:match.span()[0]+100] 
+                        telo_seq = aln.query_sequence[match.span()[0]:telo_end] 
+                        #freq = get_ratio(telo_seq, args.repeat, args.telo_start_repeat_errors) / len(telo_seq) * 100
                         freq = telo_seq.count("GGTTAC")*6 / len(telo_seq) * 100
-                        if freq > 25:
+                        if freq >= 50:
                             telo_start = match.span()[0]
                             aln.set_tag("XT", telo_start)
                             break
