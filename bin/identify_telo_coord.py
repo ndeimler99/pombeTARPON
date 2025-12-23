@@ -11,6 +11,31 @@ import regex
 #         summation += match.span()[1] - match.span()[0]
 #     return summation
 
+def get_telo_stretch(sequence, repeat, telo_start_repeat_count, telo_start_repeat_errors):
+    
+    matches = list(regex.finditer(r'(%s){e<=%s}' % (repeat * telo_start_repeat_count, telo_start_repeat_errors), sequence, overlapped=True))
+    intervals = [(m.start(), m.end()) for m in matches]
+    
+    if not intervals:
+        return 0
+
+    # Sort by start position
+    intervals.sort(key=lambda x: x[0])
+
+    merged = [intervals[0]]
+    
+    for start, end in intervals[1:]:
+        last_start, last_end = merged[-1]
+
+        if start <= last_end:  # overlap or touching
+            merged[-1] = (last_start, max(last_end, end))
+        else:
+            merged.append((start, end))
+
+    total_length = sum(end - start for start, end in merged)
+    return total_length
+
+
 def main(args):
 
     args.telo_end_repeat_errors = int(args.telo_end_repeat_errors)
@@ -43,8 +68,8 @@ def main(args):
                     if match.span()[0] > telo_end:
                         continue
                     telo_seq = aln.query_sequence[match.span()[0]:telo_end]
-                    freq = telo_seq.count("GGTTAC")*6 / len(telo_seq) * 100
-                    if freq >= 50:
+                    freq = get_telo_stretch(telo_seq, args.repeat, args.telo_start_repeat_count, args.telo_start_repeat_errors)/len(telo_seq)*100
+                    if freq >= 80:
                         telo_start = match.span()[0]
                         aln.set_tag("XT", telo_start)
                         break
@@ -58,16 +83,16 @@ def main(args):
                     if telo_start is None:
                         telo_seq = aln.query_sequence[match.span()[0]:telo_end] 
                         #freq = get_ratio(telo_seq, args.repeat, args.telo_start_repeat_errors) / len(telo_seq) * 100
-                        freq = telo_seq.count("GGTTAC")*6 / len(telo_seq) * 100
-                        if freq >= 50:
+                        freq = get_telo_stretch(telo_seq, args.repeat, args.telo_start_repeat_count, args.telo_start_repeat_errors)/len(telo_seq)*100
+                        if freq >= 80:
                             telo_start = match.span()[0]
                             aln.set_tag("XT", telo_start)
                             break
                     elif match.span()[0] < telo_start:
                         telo_seq = aln.query_sequence[match.span()[0]:telo_end] 
                         #freq = get_ratio(telo_seq, args.repeat, args.telo_start_repeat_errors) / len(telo_seq) * 100
-                        freq = telo_seq.count("GGTTAC")*6 / len(telo_seq) * 100
-                        if freq >= 50:
+                        freq = get_telo_stretch(telo_seq, args.repeat, args.telo_start_repeat_count, args.telo_start_repeat_errors)/len(telo_seq)*100
+                        if freq >= 80:
                             telo_start = match.span()[0]
                             aln.set_tag("XT", telo_start)
                             break
