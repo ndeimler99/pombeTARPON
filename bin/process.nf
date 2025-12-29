@@ -92,7 +92,7 @@ process ALIGNMENT {
         tuple val(sample_name), path(input_fh)
         path(POMBE_GENOME_FILE)
     output:
-        tuple val(sample_name), path("*.stats.txt"), emit:alignment
+        path("*.stats.txt"), emit:alignment
         path("*.pdf")
 
     publishDir "${params.outdir}/${sample_name}/", mode: 'copy', overwrite:true, pattern:"*.pdf"
@@ -156,17 +156,30 @@ process GENERATE_HTML_REPORT {
     tag 'Generating HTML Report'
 
     input:
+        path("params.json")
+        path("versions.txt")
+        path("manifest.json")
+        path(alignment_files)
         path(stats_files)
 
     output:
-        path("*.html")
-        path("*.pdf")
+        path("report.html")
+    //     path("*.pdf")
 
     publishDir "${params.outdir}/", mode: 'copy', overwrite:true, pattern:"*.html"
-    publishDir "${params.outdir}/FIGURES/", mode: 'copy', overwrite:true, pattern:"*.pdf"
+    //publishDir "${params.outdir}/FIGURES/", mode: 'copy', overwrite:true, pattern:"*.pdf"
 
     script:
     """
+    generate_html_report.py --workflow_name pombeTARPON \
+                            --report report.html \
+                            --params params.json \
+                            --versions versions.txt \
+                            --manifest manifest.json \
+                            --minimum_read_count ${params.minimum_telo_reads_per_sample} \
+                            --alignment_files ${alignment_files} \
+                            --stats_files ${stats_files} 
+    
     appendStats.py --stats_file ${stats_files} --outFile combined.stats.txt
     plots.R combined.stats.txt comparison
     """
@@ -318,7 +331,6 @@ process getVersions {
     python --version | sed 's/ /,/' >> versions.txt
     python -c "import regex; print(f'regex,{regex.__version__}')" >> versions.txt
     python -c "import pandas; print(f'pandas,{pandas.__version__}')" >> versions.txt
-    seqkit version | sed 's/ /,/' >> versions.txt
     """
 }
 

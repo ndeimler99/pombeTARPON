@@ -27,6 +27,7 @@ workflow TELOMERE_STATS {
         print("Telomere Analysis")
 
         telo_coordinates = IDENTIFY_TELO_CORDINATES(telo_reads)
+        
         telo_stats = GET_STATS_FROM_BAM(telo_coordinates.coordinates_identified)
 
         telo_fasta = CONVERT_BAM_TO_FASTA_AND_TRIM(telo_stats.telo_bam, telo_stats.telo_stats)

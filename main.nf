@@ -29,6 +29,7 @@ include { paramsHelp; paramsSummaryLog; samplesheetToList } from 'plugin/nf-sche
 include { ALIGNMENT } from "./bin/process.nf"
 include { TELOMERE_STATS } from "./subworkflows/telomere_stats.nf"
 include { GENERATE_HTML_REPORT } from "./bin/process.nf"
+include { getParams; getVersions; getManifest } from "./bin/process.nf"
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     Run Workflow
@@ -46,25 +47,26 @@ workflow {
         exit 1, "Parameter Validation Failed"
     }
 
-
-    // I am making this too complicated to start
-        // start with Nanopore demuxed sequences and no adaptor
-        // to include in final report is number of reads per each barcode/unclassified
-        // per barcode number of telo reads
-        // telo stats per barcode
+    parameters = getParams()
+    versions = getVersions()
+    manifest = getManifest()
 
     // process input files and isolate telomeric sequences
         // returns channel filled with sample - putative read pairs
     preprocess_out = PREPROCESS_FILES()
 
     // align to reference genome for html report
-    //alignment = ALIGNMENT(preprocess_out.input, file(params.pombe_genome))
+    alignment = ALIGNMENT(preprocess_out.input, file(params.pombe_genome))
 
     // take putative reads and identify telo start, telo end, and filter low quality telo sequences
     telo_results = TELOMERE_STATS(preprocess_out.reverse_complemented_reads)
 
     // generate html report
-    GENERATE_HTML_REPORT(telo_results.telo_stats.collect())
+    alignment.alignment.collect().view()
+    telo_results.telo_stats.collect().view()
+    GENERATE_HTML_REPORT(parameters.params, versions.versions, manifest.manifest, \
+                        alignment.alignment.collect(), \
+                        telo_results.telo_stats.collect())
 
 
 

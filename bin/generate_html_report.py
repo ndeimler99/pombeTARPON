@@ -1164,30 +1164,12 @@ def argparser():
     """Argument parser for entrypoint."""
     parser = argparse.ArgumentParser()
     parser.add_argument("--report", required=True)
-    parser.add_argument("--template_file", required=True)
     parser.add_argument("--workflow_name", required=True, help="The name of the workflow.") # works
     parser.add_argument("--params", required=True) #works
     parser.add_argument("--versions", required=True) #works  
     parser.add_argument("--manifest", required=True) #works
-    parser.add_argument("--commandLine", required=True)
-    parser.add_argument("--minimum_read_count", required=True)
-    parser.add_argument("--run_stats_retained", required=True) #works but need to figure out how to get combined sample stats here
-    parser.add_argument("--run_stats_filtered", required=True) #works but need to figure out how to get combined sample stats here
-    parser.add_argument("--sample_stats_retained", nargs='+', required=True) #works but only for simplex, not multiplex tested yet
-    parser.add_argument("--sample_stats_filtered", nargs='+', required=True) #works but only for simplex, not multiplex tested yet
-    parser.add_argument("--sample_telo_stats", nargs="+", required=True)
-    parser.add_argument("--run_telo_stats", required=True)
-    parser.add_argument("--run_vrr_stats", required=True)
-    parser.add_argument("--restriction_digest", required=True, nargs="+")
-    parser.add_argument("--plot_vrr_length", required=True)
-    parser.add_argument("--plot_telo_length", required=True)
-    parser.add_argument("--strand_comparison", required=True)
-    parser.add_argument("--detailed_stats", required=True)
-    parser.add_argument("--mutant", required=True)
-    parser.add_argument("--mutant_analysis_repeat_distribution", nargs="+", required=True)
-    parser.add_argument("--mutant_analysis_processivity", nargs="+", required=True)
-    parser.add_argument("--repeat", required=True)
-    
+    parser.add_argument("--alignment_files", nargs='+', required=True) #works but only for simplex, not multiplex tested yet
+    parser.add_argument("--stats_files", nargs='+', required=True) #works but only for simplex, not multiplex tested yet
     return parser
 
 
