@@ -24,3 +24,9 @@ Telomeric sequences are then clustered using MeshClust to identify chromosome ar
 ## Output
 
 A variety of files is generated as output including png images of clustering results and pdf files of telomere lengths. All telomeric reads included in the final analys is outputted as a bam file with a corresponding .txt file that lists all descriptive statistics for thes reads and can easily be used to generate custom plots. Additionally, in the future a default HTML report will also be included in the output.
+
+
+
+
+
+This pipeline utilizes ezcharts to aid in the generation of bokeh plots for the final HTML report. Please see the following disclaimer as well as the License provided in the LICENSE folder for use of this software. This product includes software developed by Oxford Nanopore Technologies Plc.
