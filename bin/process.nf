@@ -92,7 +92,7 @@ process ALIGNMENT {
         tuple val(sample_name), path(input_fh)
         path(POMBE_GENOME_FILE)
     output:
-        path("*.stats.txt"), emit:alignment
+        path("*.alignment_stats.txt"), emit:alignment
         path("*.pdf")
 
     publishDir "${params.outdir}/${sample_name}/", mode: 'copy', overwrite:true, pattern:"*.pdf"
@@ -103,8 +103,8 @@ process ALIGNMENT {
     gzip ${sample_name}.fastq
     minimap2 -ax map-ont ${POMBE_GENOME_FILE} ${sample_name}.fastq.gz > ${sample_name}.alignment.sam 2> ${sample_name}.alignment.err
     samtools view -h -b ${sample_name}.alignment.sam > ${sample_name}.alignment.bam
-    alignment_stats.py --alignment_file ${sample_name}.alignment.bam --stats_file ${sample_name}.stats.txt --sample ${sample_name}
-    alignment_plots.R ${sample_name}.stats.txt
+    alignment_stats.py --alignment_file ${sample_name}.alignment.bam --stats_file ${sample_name}.alignment_stats.txt --sample ${sample_name}
+    alignment_plots.R ${sample_name}.alignment_stats.txt
     """
 }
 
@@ -176,7 +176,7 @@ process GENERATE_HTML_REPORT {
                             --params params.json \
                             --versions versions.txt \
                             --manifest manifest.json \
-                            --minimum_read_count ${params.minimum_telo_reads_per_sample} \
+                            --minimum_read_count ${params.minimum_read_count} \
                             --alignment_files ${alignment_files} \
                             --stats_files ${stats_files} 
     
@@ -331,6 +331,11 @@ process getVersions {
     python --version | sed 's/ /,/' >> versions.txt
     python -c "import regex; print(f'regex,{regex.__version__}')" >> versions.txt
     python -c "import pandas; print(f'pandas,{pandas.__version__}')" >> versions.txt
+    python -c "import argparse; print(f'argparse,{argparse.__version__}')" >> versions.txt
+    python -c "import pysam; print(f'pysam,{pysam.__version__}')" >> versions.txt
+    python -c "import dominate; print(f'dominate,{dominate.__version__}')" >> versions.txt
+    python -c "import ezcharts; print(f'ezcharts,{ezcharts.__version__}')" >> versions.txt
+    python -c "import numpy; print(f'numpy,{numpy.__version__}')" >> versions.txt
     """
 }
 

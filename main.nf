@@ -62,8 +62,8 @@ workflow {
     telo_results = TELOMERE_STATS(preprocess_out.reverse_complemented_reads)
 
     // generate html report
-    alignment.alignment.collect().view()
-    telo_results.telo_stats.collect().view()
+    //alignment.alignment.collect().view()
+    //telo_results.telo_stats.collect().view()
     GENERATE_HTML_REPORT(parameters.params, versions.versions, manifest.manifest, \
                         alignment.alignment.collect(), \
                         telo_results.telo_stats.collect())
